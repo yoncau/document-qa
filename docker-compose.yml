@@ -1,0 +1,30 @@
+# Starts a PostgreSQL database with the pgvector extension preinstalled.
+# Run with:  docker compose up -d      (start in background)
+#            docker compose down       (stop and remove the container)
+#            docker compose down -v     (also delete the stored data volume)
+
+services:
+  postgres:
+    # This image is Postgres 17 with the pgvector extension already built in,
+    # so we don't have to install the extension manually.
+    image: pgvector/pgvector:pg17
+    container_name: document-qa-postgres
+    environment:
+      POSTGRES_DB: vectordb          # database name our app connects to
+      POSTGRES_USER: postgres        # dev credentials (fine for local only)
+      POSTGRES_PASSWORD: postgres
+    ports:
+      # host:container — our app reaches the DB at localhost:5432
+      - "5432:5432"
+    volumes:
+      # Persists data between restarts so re-ingesting isn't needed every time.
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      # Lets us (and tooling) know when the DB is actually ready to accept connections.
+      test: ["CMD-SHELL", "pg_isready -U postgres -d vectordb"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  pgdata:
