@@ -6,6 +6,7 @@ import org.springframework.ai.document.Document;
 import org.springframework.ai.reader.tika.TikaDocumentReader;
 import org.springframework.ai.transformer.splitter.TokenTextSplitter;
 import org.springframework.ai.vectorstore.VectorStore;
+import org.springframework.ai.vectorstore.filter.FilterExpressionBuilder;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
 
@@ -56,6 +57,10 @@ public class IngestionService {
         // 2. Transform: split into smaller, embed-friendly chunks.
         List<Document> chunks = splitter.split(rawDocuments);
         log.info("Split '{}' into {} chunks", sourceName, chunks.size());
+
+        // Re-ingesting the same file replaces its old chunks instead of duplicating them
+        var b = new FilterExpressionBuilder();
+        vectorStore.delete(b.eq("source", sourceName).build());
 
         // 3. Load: store the chunks. The VectorStore embeds them internally
         //    (via the configured Ollama model) and writes vectors to pgvector.
